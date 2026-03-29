@@ -16,7 +16,11 @@ const config = {
   projectName: 'system-design',
   trailingSlash: false,
   onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
 
   i18n: { defaultLocale: 'en', locales: ['en'] },
 
@@ -58,7 +62,7 @@ const config = {
             label: 'Notes',
           },
           {
-            href: 'https://github.com/<your-github-username>/system-design-notes',
+            href: 'https://github.com/blueisharch/system-design',
             label: 'GitHub',
             position: 'right',
           },

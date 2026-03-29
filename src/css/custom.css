@@ -1,0 +1,28 @@
+/**
+ * Custom styles for System Design Notes
+ * Docusaurus CSS variables reference:
+ * https://docusaurus.io/docs/styling-layout#styling-your-site-with-infima
+ */
+
+:root {
+  --ifm-color-primary: #2e86de;
+  --ifm-color-primary-dark: #1a78d4;
+  --ifm-color-primary-darker: #1870c8;
+  --ifm-color-primary-darkest: #145da5;
+  --ifm-color-primary-light: #4294e4;
+  --ifm-color-primary-lighter: #559ce7;
+  --ifm-color-primary-lightest: #7ab1ed;
+  --ifm-code-font-size: 90%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #4294e4;
+  --ifm-color-primary-dark: #2e86de;
+  --ifm-color-primary-darker: #1a78d4;
+  --ifm-color-primary-darkest: #145da5;
+  --ifm-color-primary-light: #559ce7;
+  --ifm-color-primary-lighter: #7ab1ed;
+  --ifm-color-primary-lightest: #9ec5f3;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}

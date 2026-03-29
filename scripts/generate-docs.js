@@ -126,14 +126,90 @@ function findFileByName(dir, name) {
 }
 
 /**
+ * Rewrite internal .md links to .mdx so Docusaurus resolves them correctly
+ * after the generate step converts all files from .md → .mdx.
+ * Only rewrites links that don't point to external URLs.
+ */
+function rewriteMarkdownLinks(content) {
+  // Match markdown links: [label](some/path.md) or [label](./path.md)
+  // but NOT [label](https://...) or [label](http://...)
+  return content.replace(
+    /(\[[^\]]*\]\()(?!https?:\/\/)([^)]*?)\.md(\))/g,
+    '$1$2.mdx$3'
+  );
+}
+
+/**
+ * Sanitize content so MDX's stricter JSX parser doesn't choke on raw HTML
+ * or other constructs common in plain markdown files.
+ *
+ * MDX fails on:
+ *   - Bare < > that look like unclosed JSX tags (e.g. in comparisons like A < B)
+ *   - Raw <br>, <hr>, <img> without closing slash
+ *   - HTML comments <!-- --> inside JSX context
+ *   - Curly braces { } outside of JSX expressions (e.g. in code prose)
+ *
+ * Strategy: wrap the entire body in a way that keeps it as plain markdown
+ * by escaping only the problematic patterns that appear OUTSIDE fenced code blocks.
+ */
+function sanitizeForMdx(content) {
+  const lines = content.split('\n');
+  let inFence = false;
+  const result = [];
+
+  for (const line of lines) {
+    // Track fenced code blocks — don't touch anything inside them
+    if (/^```/.test(line)) {
+      inFence = !inFence;
+      result.push(line);
+      continue;
+    }
+
+    if (inFence) {
+      result.push(line);
+      continue;
+    }
+
+    let safe = line;
+
+    // 1. Self-closing HTML tags used in markdown: make them JSX-safe
+    //    <br> → <br/>, <hr> → <hr/>, <img ...> → <img .../>
+    safe = safe.replace(/<(br|hr)(\s*)(\/?)>/gi, '<$1$2/>');
+    safe = safe.replace(/<img(\s[^>]*?[^/])>/gi, '<img$1/>');
+
+    // 2. HTML comments <!-- ... --> — MDX doesn't support these outside JSX
+    //    Replace with an MDX-safe comment {/* ... */}
+    safe = safe.replace(/<!--([\s\S]*?)-->/g, (_, inner) => `{/* ${inner.trim()} */}`);
+
+    // 3. Lone < or > in prose that look like unclosed tags to the MDX parser.
+    //    Only escape when they appear as operators/comparisons, not as part of
+    //    a real HTML/JSX tag (which starts with a letter or /).
+    //    e.g. "if A < B" → "if A \< B"  but  "<Component>" stays untouched.
+    safe = safe.replace(/(?<![a-zA-Z0-9"'=])<(?![a-zA-Z/!])/g, '\\<');
+    safe = safe.replace(/(?<![a-zA-Z0-9"'=-])>(?!\s*[a-zA-Z/{])/g, '\\>');
+
+    result.push(safe);
+  }
+
+  return result.join('\n');
+}
+
+/**
  * Transform raw markdown:
+ * - Rewrite internal .md links → .mdx
+ * - Sanitize for MDX parser
  * - Replace .excalidraw links with an inline <ExcalidrawViewer> MDX component
  * - Add the MDX import at the top if any diagrams were injected
- * - Prepend Docusaurus front matter if the file doesn't already have it
  */
 function transformMarkdown(content, mdFilePath) {
-  const links = findExcalidrawLinks(content);
-  let transformed = content;
+  // Fix 1: rewrite internal links before anything else
+  let transformed = rewriteMarkdownLinks(content);
+
+  // Fix 2: sanitize for MDX parser
+  transformed = sanitizeForMdx(transformed);
+
+  // Fix 3: inject Excalidraw viewers
+  const links = findExcalidrawLinks(transformed);
   let injectedCount = 0;
 
   for (const link of links) {
@@ -161,7 +237,6 @@ function transformMarkdown(content, mdFilePath) {
   if (injectedCount > 0) {
     const importLine = `import ExcalidrawViewer from '@site/src/components/ExcalidrawViewer';\n\n`;
     if (transformed.startsWith('---')) {
-      // Insert after the closing --- of front matter
       const endOfFrontMatter = transformed.indexOf('\n---', 3) + 4;
       transformed =
         transformed.slice(0, endOfFrontMatter) +

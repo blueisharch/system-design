@@ -8,12 +8,12 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // ── CHANGE THESE TWO LINES ───────────────────────────────────────────────
-  url: 'https://<your-github-username>.github.io',
-  baseUrl: '/system-design-notes/',
+  url: 'https://blueisharch.github.io',
+  baseUrl: '/system-design/',
   // ────────────────────────────────────────────────────────────────────────
 
-  organizationName: '<your-github-username>',
-  projectName: 'system-design-notes',
+  organizationName: 'blueisharch',
+  projectName: 'system-design',
   trailingSlash: false,
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
